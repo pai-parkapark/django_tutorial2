@@ -1,7 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from .models import Post
-from .forms import PostForm
+from .forms import PostForm, UploadForm
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import FileSystemStorage, default_storage
+
 
 
 def say_hello(request):
@@ -35,6 +38,7 @@ def post_new(request):
     return render(request, 'hello/post_new.html', {'form': form})
 
 
+@csrf_exempt
 def post_edit(request, pk):
     post = get_object_or_404(Post, pk=pk)
     if request.method == "POST":
@@ -49,3 +53,24 @@ def post_edit(request, pk):
         raise ValueError
 
     return render(request, 'hello/post_edit.html', {'form': form})
+
+
+@csrf_exempt
+def upload(request):
+    if request.method == 'GET':
+        forms = UploadForm()
+        context = {'forms': forms}
+        return render(request, 'hello/upload.html', context)
+    elif request.method == 'POST':
+        my_img = request.FILES['file']
+        fs = FileSystemStorage(location='./hello/media')
+        filename = fs.save(my_img.name, my_img)
+        file_url = fs.url(filename)
+
+        # my_files = request.FILES.getlist('file')
+        # fs = FileSystemStorage(location='./hello/media')
+        # for my_file in my_files:
+        #     filename = fs.save(my_file.name, my_file)
+        #     file_url = fs.url(filename)
+
+        return HttpResponse(file_url)
